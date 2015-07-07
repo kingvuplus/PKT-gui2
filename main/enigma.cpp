@@ -278,8 +278,6 @@ int main(int argc, char **argv)
 	dsk.setRedrawTask(main);
 	dsk_lcd.setRedrawTask(main);
 
-	std::string active_skin = getConfigCurrentSpinner("config.skin.primary_skin");
-
 	eDebug("[MAIN] Loading spinners...");
 
 	{
@@ -290,7 +288,7 @@ int main(int argc, char **argv)
 		{
 			char filename[64];
 			std::string rfilename;
-			snprintf(filename, sizeof(filename), "${datadir}/enigma2/%s/wait%d.png", active_skin.c_str(), i + 1);
+			snprintf(filename, sizeof(filename), "${datadir}/enigma2/skin_default/spinner/wait%d.png", i + 1);
 			rfilename = eEnv::resolve(filename);
 			loadPNG(wait[i], rfilename.c_str());
 
@@ -304,9 +302,9 @@ int main(int argc, char **argv)
 			}
 		}
 		if (i)
-			my_dc->setSpinner(eRect(ePoint(25, 25), wait[0]->size()), wait, i);
+			my_dc->setSpinner(eRect(ePoint(100, 100), wait[0]->size()), wait, i);
 		else
-			my_dc->setSpinner(eRect(25, 25, 0, 0), wait, 1);
+			my_dc->setSpinner(eRect(100, 100, 0, 0), wait, 1);
 	}
 
 	gRC::getInstance()->setSpinnerDC(my_dc);
