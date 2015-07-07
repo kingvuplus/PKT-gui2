@@ -1,25 +1,41 @@
 #!/bin/sh
 
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-datarootdir=@datarootdir@
+boxmodel=`cat /etc/boxmodel`
 
-if [ -x @bindir@/showiframe ]; then
-	if [ -f @sysconfdir@/enigma2/backdrop.mvi ]; then
-		@bindir@/showiframe @sysconfdir@/enigma2/backdrop.mvi
-	elif [ -f @datadir@/backdrop.mvi ]; then
-		@bindir@/showiframe @datadir@/backdrop.mvi
+if [$boxmodel != "solo2" ]; then
+  echo "HYPERION" > /dev/vfd
+fi
+
+prefix=/usr
+exec_prefix=/usr
+datarootdir=${prefix}/share
+
+if [ -x /var/config/start.sh ]; then
+	/var/config/start.sh
+fi
+
+if [ -e /lib/modules/3.12.1/kernel/fake/fake.ko ]; then
+	insmod /lib/modules/3.12.1/kernel/fake/fake.ko
+fi
+
+#start automount
+python /etc/init.d/automount &
+
+if [ -x /usr/bin/showiframe ]; then
+	if [ -f /etc/enigma2/backdrop.mvi ]; then
+		/usr/bin/showiframe /etc/enigma2/backdrop.mvi
+	elif [ -f /usr/share/backdrop.mvi ]; then
+		/usr/bin/showiframe /usr/share/backdrop.mvi
 	fi
 fi
 
 # hook to execute scripts always before enigma2 start
-if [ -x @bindir@/enigma2_pre_start.sh ]; then
-	@bindir@/enigma2_pre_start.sh
+if [ -x /usr/bin/enigma2_pre_start.sh ]; then
+	/usr/bin/enigma2_pre_start.sh
 fi
 
 if [ -d /home/root ]; then
-	export HOME=/home/root
-	cd
+	cd /home/root
 fi
 
 #check for sundtek tuner helper lib
@@ -36,12 +52,12 @@ sync
 
 if [ "$(grep config.crash.enabledebug /etc/enigma2/settings)" == "config.crash.enabledebug=true" ]; then
 	if [ "$(grep config.crash.debug_path= /etc/enigma2/settings | sed 's/config.crash.debug_path=//g')" != "" -a -d "$(grep config.crash.debug_path= /etc/enigma2/settings | sed 's/config.crash.debug_path=//g')" ]; then
-		LD_PRELOAD=$LIBS @bindir@/enigma2 &> $(grep config.crash.debug_path= /etc/enigma2/settings | sed 's/config.crash.debug_path=//g')Enigma2-$(date +%d-%m-%Y_%H-%M-%S).log
+		LD_PRELOAD=$LIBS /usr/bin/enigma2 &> $(grep config.crash.debug_path= /etc/enigma2/settings | sed 's/config.crash.debug_path=//g')Enigma2-$(date +%d-%m-%Y_%H-%M-%S).log
 	else
-		LD_PRELOAD=$LIBS @bindir@/enigma2 &> /home/root/logs/Enigma2-$(date +%d-%m-%Y_%H-%M-%S).log
+		LD_PRELOAD=$LIBS /usr/bin/enigma2 &> /home/root/logs/Enigma2-$(date +%d-%m-%Y_%H-%M-%S).log
 	fi
 else
-	LD_PRELOAD=$LIBS @bindir@/enigma2
+	LD_PRELOAD=$LIBS /usr/bin/enigma2
 fi
 
 # enigma2 exit codes:
@@ -77,15 +93,6 @@ case $ret in
 		;;
 	43)
 		init 1
-		;;
-	44)
-		# little hack but it will be fixed soon in drivers
-		${libexecdir}/python/Plugins/SystemPlugins/MICOMUpgrade/bin/fbclear
-		/usr/bin/showiframe ${libexecdir}/python/Plugins/SystemPlugins/MICOMUpgrade/wait.mvi
-		echo fpupload >/proc/vfd && sleep 3 && dd bs=256k if=/tmp/micom.bi of=/dev/mcu
-		/usr/bin/showiframe ${libexecdir}/python/Plugins/SystemPlugins/MIOMUpgrade/reboot.mvi
-		# Wait forever for the user to power off
-		while(true) ; do sleep 60 ; done
 		;;
 	*)
 		rm -f /tmp/.listen.camd.socket.ignore
